@@ -27,7 +27,7 @@ public class tasqueManaging : MonoBehaviour
     private int[] movableTiles;
     private int[] goalTiles = new int[3];
     private int stage;
-    private int[] groups = new int[4];
+    private int[] groups = new int[4] { -1, -1, -1, -1 };
     private int[][] subtiles = new int[][] { new int[4], new int[4], new int[4], new int[4] };
     private string[] maze;
 
@@ -107,8 +107,8 @@ public class tasqueManaging : MonoBehaviour
                 else if (movableTiles.Contains(ix))
                     tileRenders[ix].material.color = tileColors[0];
             };
-            submitButton.OnInteract += delegate () { PressSubmitButton(); return false; };
         }
+        submitButton.OnInteract += delegate () { PressSubmitButton(); return false; };
     }
 
     private void Start()
@@ -128,19 +128,27 @@ public class tasqueManaging : MonoBehaviour
         }
         while (goalTiles.Any(x => x == startingPosition) || goalTiles.Distinct().Count() != 3);
 
+        var snVowel = bomb.GetSerialNumberLetters().Any(x => "AEIOU".Contains(x));
         for (int i = 0; i < 4; i++)
             if (groupIndices[i].Contains(startingPosition))
-                groups[0] = bomb.GetSerialNumberLetters().Any(x => "AEIOU".Contains(x)) ? i : 3 - i;
+                groups[0] = snVowel ? i : 3 - i;
+        Debug.LogFormat("[Tasque Managing #{0}] The serial number does{1} contain a vowel, so group A is{2} the one containing the starting tile.", moduleId, snVowel ? "" : "n't", snVowel ? "" : " opposite");
         if (bomb.GetPortCount() == 0)
+        {
             groups[1] = 3 - groups[0];
+            Debug.LogFormat("[Tasque Managing #{0}] No ports detected, group B is opposite group A.");
+        }
         else
         {
-            var directionOrder = "ULRD";
             var lists = "ULDR;URDL;DULR;RLUD:LRDU;DRUL".Split(';').ToArray();
             var ports = new Port[] { Port.Parallel, Port.Serial, Port.StereoRCA, Port.PS2, Port.DVI, Port.RJ45 };
-            var listIx = Array.IndexOf(ports, ports.First(x => bomb.IsPortPresent(x)));
-            var directionIndices = lists[listIx].Select(x => directionOrder.IndexOf(x)).ToArray();
-            groups[1] = startingTime % 2 == 0 ? directionIndices.Where(x => x != groups[0]).First() : directionIndices.Where(x => x != groups[0]).Last();
+            var firstPort = ports.First(x => bomb.IsPortPresent(x));
+            var listIx = Array.IndexOf(ports, firstPort);
+            Debug.LogFormat("[Tasque Managing #{0}] First port detected: {1}", moduleId, firstPort);
+            var directionIndices = lists[listIx].Select(x => "ULRD".IndexOf(x)).Where(x => x != groups[0]).ToArray();
+            var startingTimeEven = startingTime % 2 == 0;
+            Debug.LogFormat("[Tasque Managing #{0}] The bomb's starting time was{1} even, so use the {2} unclaimed direction in the list.", moduleId, startingTimeEven ? "" : "n't", startingTimeEven ? "first" : "last");
+            groups[1] = startingTimeEven ? directionIndices.First() : directionIndices.Last();
         }
         var adjacentIndices = new int[][] { new int[] { 0, 1 }, new int[] { 2, 0 }, new int[] { 1, 3 }, new int[] { 3, 2 } }; // GREEN IS SECOND
         if (adjacentIndices.Any(x => !x.Contains(groups[0]) && !x.Contains(groups[1])))
@@ -157,14 +165,17 @@ public class tasqueManaging : MonoBehaviour
                 if (!adjacentIndices[i].Contains(groups[0]) && !adjacentIndices[i].Contains(groups[1]))
                     ix = i;
             groups[2] = modules[ix].Any(x => bomb.GetModuleNames().Contains(x)) ? adjacentIndices[ix][1] : adjacentIndices[ix][0];
+            Debug.LogFormat("[Tasque Managing #{0}] The remaining 2 groups are not adjacent.", moduleId);
         }
         else
         {
+            var platesEven = bomb.GetPortPlateCount() % 2 == 0;
+            Debug.LogFormat("[Tasque Managing #{0}] The remaining 2 groups are not adjacent, so use the {1} group.", moduleId, "left/up", "right/down");
             var indices = new int[][] { new int[] { 0, 3 }, new int[] { 1, 2 } }.First(x => !x.Contains(groups[0]) && !x.Contains(groups[1])).ToArray();
-            groups[2] = bomb.GetPortPlateCount() % 2 == 0 ? indices[0] : indices[1];
+            groups[2] = indices[platesEven ? 0 : 1];
         }
         groups[3] = Enumerable.Range(0, 4).First(x => groups[0] != x && groups[1] != x && groups[2] != x);
-        Debug.LogFormat("[Tasque Managing #{0}] Groups (in reading order): {1}", moduleId, groups.Select(x => "ABCD"[x]).Join(", "));
+        Debug.LogFormat("[Tasque Managing #{0}] Groups (reading order): {1}", moduleId, groups.Select(x => "ABCD"[x]).Join(", "));
 
         var tableSnowgrave = "DULULDRRLRLDRUDUUDDLRURLDULRLRUDLDURDLURDLUURDLRRULDRDLUURLRUDDL".Select(x => "URDL".IndexOf(x)).ToArray();
         var snIndices = new int[][] { new int[] { 3, 4 }, new int[] { 0, 2 }, new int[] { 1, 5 } };
@@ -312,10 +323,7 @@ public class tasqueManaging : MonoBehaviour
             }
         }
         else
-        {
-            Debug.LogFormat("[Tasque Managing #{0}] No, no! You've gotten turned around!", moduleId);
-            module.HandleStrike();
-        }
+            StartCoroutine(Strike());
     }
 
     private IEnumerator CountUp()
@@ -325,12 +333,13 @@ public class tasqueManaging : MonoBehaviour
         for (int i = 0; i < 4; i++)
             if (groupIndices[i].Contains(goalTiles[stage]))
                 group = i;
-        var subtile = Array.IndexOf(groupIndices[group], goalTiles[stage]);
-        audio.PlaySoundAtTransform("ABCD"[group].ToString(), transform);
-        StartCoroutine(ShowLetter("ABCD"[group]));
+        var subtile = subtiles[group][Array.IndexOf(groupIndices[group], goalTiles[stage])];
+        var groupFirst = bomb.GetSerialNumberNumbers().Last() % 2 == 0;
+        audio.PlaySoundAtTransform("ABCD"[groupFirst ? group : subtile].ToString(), transform);
+        StartCoroutine(ShowLetter("ABCD"[groupFirst ? group : subtile]));
         yield return new WaitForSeconds(.5f);
-        audio.PlaySoundAtTransform("ABCD"[subtile].ToString(), transform);
-        StartCoroutine(ShowLetter("ABCD"[subtile]));
+        audio.PlaySoundAtTransform("ABCD"[groupFirst ? subtile : group].ToString(), transform);
+        StartCoroutine(ShowLetter("ABCD"[groupFirst ? subtile : group]));
         yield return new WaitForSeconds(.5f);
         animating = false;
         yield return new WaitForSeconds(waitTime);
