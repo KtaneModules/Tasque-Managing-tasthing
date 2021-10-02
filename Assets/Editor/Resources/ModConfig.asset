@@ -14,7 +14,10 @@ MonoBehaviour:
   id: tasqueManaging
   title: Tasque Managing
   author: TasThing
-  description: 
+  description: 'Chaos, chaos!? No, no! Order, order! Now get rid of that silly logfile!
+
+
+    Module idea and implementation by TasThing.'
   version: 1.0
   outputFolder: build
-  previewImage: {fileID: 0}
+  previewImage: {fileID: 2800000, guid: 80835cfc445b5cc4e956598e37b05f73, type: 3}

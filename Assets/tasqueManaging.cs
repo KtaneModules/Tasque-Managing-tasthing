@@ -279,7 +279,7 @@ public class tasqueManaging : MonoBehaviour
                     {
                         moduleSolved = true;
                         module.HandlePass();
-                        // SOLVE SOUND
+                        audio.PlaySoundAtTransform("solve", transform);
                         Debug.LogFormat("[Tasque Managing #{0}] The module is solved, that it is!", moduleId);
                         tileRenders[currentPosition].material.color = tileColors[0];
                         if (countUp != null)
@@ -348,7 +348,7 @@ public class tasqueManaging : MonoBehaviour
         Debug.LogFormat("[Tasque Managing #{0}] You ended up at {1}! No, no!", moduleId, PositionName(currentPosition));
         Debug.LogFormat("[Tasque Managing #{0}] Someone ought to whip you into shape! Back to the beginning you go!", moduleId);
         module.HandleStrike();
-        // STRIKE SOUND
+        audio.PlaySoundAtTransform("strike", transform);
         foreach (Renderer tile in tileRenders)
             tile.material.color = tileColors[4];
         yield return new WaitForSeconds(2f);
