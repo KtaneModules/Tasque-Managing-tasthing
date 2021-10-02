@@ -15,6 +15,7 @@ public class tasqueManaging : MonoBehaviour
 
     public KMSelectable[] tiles;
     private Renderer[] tileRenders;
+    public KMSelectable submitButton;
     public Renderer[] leds;
     public TextMesh screenText;
     public Material litMat;
@@ -106,6 +107,7 @@ public class tasqueManaging : MonoBehaviour
                 else if (movableTiles.Contains(ix))
                     tileRenders[ix].material.color = tileColors[0];
             };
+            submitButton.OnInteract += delegate () { PressSubmitButton(); return false; };
         }
     }
 
@@ -270,36 +272,49 @@ public class tasqueManaging : MonoBehaviour
                     tileRenders[ix].material.color = tileColors[3];
                 else
                     tileRenders[ix].material.color = tileColors[2];
-                if (currentPosition == goalTiles[stage])
-                {
-                    Debug.LogFormat("[Tasque Managing #{0}] You've made it to {1}!", moduleId, PositionName(currentPosition));
-                    leds[stage].material = litMat;
-                    stage++;
-                    if (stage == 3)
-                    {
-                        moduleSolved = true;
-                        module.HandlePass();
-                        audio.PlaySoundAtTransform("solve", transform);
-                        Debug.LogFormat("[Tasque Managing #{0}] The module is solved, that it is!", moduleId);
-                        tileRenders[currentPosition].material.color = tileColors[0];
-                        if (countUp != null)
-                        {
-                            StopCoroutine(countUp);
-                            countUp = null;
-                        }
-                        StartCoroutine(SolveAnimation());
-                    }
-                    else
-                    {
-                        if (countUp != null)
-                        {
-                            StopCoroutine(countUp);
-                            countUp = null;
-                        }
-                        countUp = StartCoroutine(CountUp());
-                    }
-                }
             }
+        }
+    }
+
+    private void PressSubmitButton()
+    {
+        audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonRelease, submitButton.transform);
+        submitButton.AddInteractionPunch(.25f);
+        if (moduleSolved || animating || !bombStarted || !moduleActive)
+            return;
+        if (currentPosition == goalTiles[stage])
+        {
+            Debug.LogFormat("[Tasque Managing #{0}] You've made it to {1}!", moduleId, PositionName(currentPosition));
+            leds[stage].material = litMat;
+            stage++;
+            if (stage == 3)
+            {
+                moduleSolved = true;
+                module.HandlePass();
+                audio.PlaySoundAtTransform("solve", transform);
+                Debug.LogFormat("[Tasque Managing #{0}] The module is solved, that it is!", moduleId);
+                tileRenders[currentPosition].material.color = tileColors[0];
+                if (countUp != null)
+                {
+                    StopCoroutine(countUp);
+                    countUp = null;
+                }
+                StartCoroutine(SolveAnimation());
+            }
+            else
+            {
+                if (countUp != null)
+                {
+                    StopCoroutine(countUp);
+                    countUp = null;
+                }
+                countUp = StartCoroutine(CountUp());
+            }
+        }
+        else
+        {
+            Debug.LogFormat("[Tasque Managing #{0}] No, no! You've gotten turned around!", moduleId);
+            module.HandleStrike();
         }
     }
 
@@ -386,7 +401,7 @@ public class tasqueManaging : MonoBehaviour
 
     // Twitch Plays
 #pragma warning disable 414
-    private readonly string TwitchHelpMessage = "!{0} activate [Begins the module. On Twitch Plays, you have 30 seconds to move instead of 15.] !{0} <TL/TR/BL/BR> [Moves in that direction, can be chained with spaces, e.g. !{0} TL BL TR]";
+    private readonly string TwitchHelpMessage = "!{0} activate [Begins the module. On Twitch Plays, you have 30 seconds to move instead of 15.] !{0} submit [Presses the submit button.] !{0} <TL/TR/BL/BR> [Moves in that direction, can be chained with spaces, e.g. !{0} TL BL TR]";
 #pragma warning restore 414
 
     private IEnumerator ProcessTwitchCommand(string input)
@@ -397,6 +412,11 @@ public class tasqueManaging : MonoBehaviour
         {
             yield return null;
             tiles[startingPosition].OnInteract();
+        }
+        else if (input == "SUBMIT")
+        {
+            yield return null;
+            submitButton.OnInteract();
         }
         else if (input.Split(' ').All(x => directions.Contains(x)))
         {
@@ -427,7 +447,7 @@ public class tasqueManaging : MonoBehaviour
                 tiles[startingPosition].OnInteract();
             }
             var q = new Queue<int>();
-            var allMoves = new List<Movement>();
+            var allMoves = new List<movement>();
             q.Enqueue(currentPosition);
             while (q.Count > 0)
             {
@@ -440,7 +460,7 @@ public class tasqueManaging : MonoBehaviour
                     if (cell.Contains(i.ToString()) && !allMoves.Any(x => x.start == adjacentTiles[next][i]))
                     {
                         q.Enqueue(adjacentTiles[next][i]);
-                        allMoves.Add(new Movement(next, adjacentTiles[next][i], i));
+                        allMoves.Add(new movement(next, adjacentTiles[next][i], i));
                     }
                 }
             }
@@ -451,7 +471,7 @@ public class tasqueManaging : MonoBehaviour
             if (allMoves.Count != 0) // Checks for position already being target
             {
                 var lastMove = allMoves.First(x => x.end == goalTiles[stage]);
-                var relevantMoves = new List<Movement> { lastMove };
+                var relevantMoves = new List<movement> { lastMove };
                 while (lastMove.start != currentPosition)
                 {
                     lastMove = allMoves.First(x => x.end == lastMove.start);
@@ -464,16 +484,18 @@ public class tasqueManaging : MonoBehaviour
                     yield return new WaitForSeconds(.1f);
                 }
             }
+            yield return new WaitForSeconds(.1f);
+            submitButton.OnInteract();
         }
     }
 
-    private class Movement
+    private class movement
     {
         public int start { get; set; }
         public int end { get; set; }
         public int direction { get; set; }
 
-        public Movement(int s, int e, int d)
+        public movement(int s, int e, int d)
         {
             start = s;
             end = e;
