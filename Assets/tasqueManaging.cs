@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using KModkit;
-using System.Text.RegularExpressions;
 using rnd = UnityEngine.Random;
 
 public class tasqueManaging : MonoBehaviour
@@ -27,8 +26,6 @@ public class tasqueManaging : MonoBehaviour
     private int[] movableTiles;
     private int[] goalTiles = new int[3];
     private int stage;
-    private int[] groups = new int[4] { -1, -1, -1, -1 };
-    private int[][] subtiles = new int[][] { new int[4], new int[4], new int[4], new int[4] };
     private string[] maze;
 
     private static float waitTime = 15f;
@@ -127,127 +124,6 @@ public class tasqueManaging : MonoBehaviour
                 goalTiles[i] = rnd.Range(0, 16);
         }
         while (goalTiles.Any(x => x == startingPosition) || goalTiles.Distinct().Count() != 3);
-
-        var snVowel = bomb.GetSerialNumberLetters().Any(x => "AEIOU".Contains(x));
-        for (int i = 0; i < 4; i++)
-            if (groupIndices[i].Contains(startingPosition))
-                groups[0] = snVowel ? i : 3 - i;
-        Debug.LogFormat("[Tasque Managing #{0}] The serial number does{1} contain a vowel, so group A is{2} the one containing the starting tile.", moduleId, snVowel ? "" : "n't", snVowel ? "" : " opposite");
-        if (bomb.GetPortCount() == 0)
-        {
-            groups[1] = 3 - groups[0];
-            Debug.LogFormat("[Tasque Managing #{0}] No ports detected, group B is opposite group A.");
-        }
-        else
-        {
-            var lists = "ULDR;URDL;DULR;RLUD:LRDU;DRUL".Split(';').ToArray();
-            var ports = new Port[] { Port.Parallel, Port.Serial, Port.StereoRCA, Port.PS2, Port.DVI, Port.RJ45 };
-            var firstPort = ports.First(x => bomb.IsPortPresent(x));
-            var listIx = Array.IndexOf(ports, firstPort);
-            Debug.LogFormat("[Tasque Managing #{0}] First port detected: {1}", moduleId, firstPort);
-            var directionIndices = lists[listIx].Select(x => "ULRD".IndexOf(x)).Where(x => x != groups[0]).ToArray();
-            var startingTimeEven = startingTime % 2 == 0;
-            Debug.LogFormat("[Tasque Managing #{0}] The bomb's starting time was{1} even, so use the {2} unclaimed direction in the list.", moduleId, startingTimeEven ? "" : "n't", startingTimeEven ? "first" : "last");
-            groups[1] = startingTimeEven ? directionIndices.First() : directionIndices.Last();
-        }
-        var adjacentIndices = new int[][] { new int[] { 0, 1 }, new int[] { 2, 0 }, new int[] { 1, 3 }, new int[] { 3, 2 } }; // GREEN IS SECOND
-        if (adjacentIndices.Any(x => !x.Contains(groups[0]) && !x.Contains(groups[1])))
-        {
-            var modules = new string[][]
-            {
-                new string[] { "Simon Screams", "Piragua", "The Sun", "The Hyperlink", "Simon Stores", "Amnesia", "Chilli Beans", "Purple Arrows", "Addition", "Interpunct", "Hexiom" },
-                new string[] { "Polyhedral Maze", "Scavenger Hunt", "The Jewel Vault", "Jack Attack", "Ordered Keys", "Infinite Loop", "Metamem", "Organization", "Bowling", "Ladders", "7" },
-                new string[] { "Tic Tac Toe", "Shell Game", "Algebra", "Logic Chess", "Not X01", "Mazery", "One-Line", "Simon Selects", "Negativity", "Newline", "Simon Stages" },
-                new string[] { "Wire Placement", "Loopover", "Blockbusters", "Spelling Bee", "Jumble Cycle", "UNO!", "Synesthesia", "Masyu", "A Message", "Superparsing", "❖" }
-            };
-            var ix = 0;
-            for (int i = 0; i < 4; i++)
-                if (!adjacentIndices[i].Contains(groups[0]) && !adjacentIndices[i].Contains(groups[1]))
-                    ix = i;
-            groups[2] = modules[ix].Any(x => bomb.GetModuleNames().Contains(x)) ? adjacentIndices[ix][1] : adjacentIndices[ix][0];
-            Debug.LogFormat("[Tasque Managing #{0}] The remaining 2 groups are not adjacent.", moduleId);
-        }
-        else
-        {
-            var platesEven = bomb.GetPortPlateCount() % 2 == 0;
-            Debug.LogFormat("[Tasque Managing #{0}] The remaining 2 groups are not adjacent, so use the {1} group.", moduleId, "left/up", "right/down");
-            var indices = new int[][] { new int[] { 0, 3 }, new int[] { 1, 2 } }.First(x => !x.Contains(groups[0]) && !x.Contains(groups[1])).ToArray();
-            groups[2] = indices[platesEven ? 0 : 1];
-        }
-        groups[3] = Enumerable.Range(0, 4).First(x => groups[0] != x && groups[1] != x && groups[2] != x);
-        Debug.LogFormat("[Tasque Managing #{0}] Groups (reading order): {1}", moduleId, groups.Select(x => "ABCD"[x]).Join(", "));
-
-        var tableSnowgrave = "DULULDRRLRLDRUDUUDDLRURLDULRLRUDLDURDLURDLUURDLRRULDRDLUURLRUDDL".Select(x => "URDL".IndexOf(x)).ToArray();
-        var snIndices = new int[][] { new int[] { 3, 4 }, new int[] { 0, 2 }, new int[] { 1, 5 } };
-        var base36 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        var sn = bomb.GetSerialNumber();
-        var startingConfiguration = new string[4];
-        for (int i = 0; i < 3; i++)
-        {
-            var direction = tableSnowgrave[base36.IndexOf(sn[snIndices[i][0]]) % 8 * 8 + (base36.IndexOf(sn[snIndices[i][1]]) % 8)];
-            while (!string.IsNullOrEmpty(startingConfiguration[direction]))
-                direction = (direction + 3) % 4;
-            startingConfiguration[direction] = "ABC"[i].ToString();
-        }
-        startingConfiguration[Array.IndexOf(startingConfiguration, null)] = "D";
-        Debug.LogFormat("[Tasque Managing #{0}] Starting subtile configuration (clockwise order): {1}", moduleId, startingConfiguration.Join(", "));
-        var startingDirection = 0;
-        var evenModules = bomb.GetModuleNames().Count() % 2 == 0;
-        var evenIndicators = bomb.GetIndicators().Count() % 2 == 0;
-        if (!evenModules && evenIndicators)
-            startingDirection = 0;
-        else if (!evenModules && !evenIndicators)
-            startingDirection = 1;
-        else if (evenModules && !evenIndicators)
-            startingDirection = 2;
-        else
-            startingDirection = 3;
-        Debug.LogFormat("[Tasque Managing #{0}] The starting direction is {1}.", moduleId, new string[] { "up", "left", "right", "down" }[startingDirection]);
-        subtiles[startingDirection] = startingConfiguration.Select(x => "ABCD".IndexOf(x[0])).ToArray();
-        var directionXClock = bomb.GetBatteryCount() % 2 == 0;
-        var directionYClock = bomb.GetBatteryHolderCount() % 2 == 1;
-        Debug.LogFormat("[Tasque Managing #{0}] Direction X is {1}clockwise.", moduleId, directionXClock ? "" : "counter");
-        Debug.LogFormat("[Tasque Managing #{0}] Direction Y is {1}clockwise.", moduleId, directionYClock ? "" : "counter");
-        var currentDirection = startingDirection;
-        for (int i = 0; i < 3; i++)
-        {
-            var prevConfig = subtiles[currentDirection].ToArray();
-            if (directionYClock)
-            {
-                var s1 = prevConfig[0];
-                var s2 = prevConfig[1];
-                prevConfig[1] = s1;
-                prevConfig[0] = s2;
-                var s3 = prevConfig[0];
-                var s4 = prevConfig[3];
-                prevConfig[3] = s3;
-                prevConfig[0] = s4;
-                var s5 = prevConfig[2];
-                var s6 = prevConfig[3];
-                prevConfig[3] = s5;
-                prevConfig[2] = s6;
-            }
-            else
-            {
-                var s1 = prevConfig[1];
-                var s2 = prevConfig[2];
-                prevConfig[2] = s1;
-                prevConfig[1] = s2;
-                var s3 = prevConfig[0];
-                var s4 = prevConfig[2];
-                prevConfig[2] = s3;
-                prevConfig[0] = s4;
-                var s5 = prevConfig[2];
-                var s6 = prevConfig[3];
-                prevConfig[3] = s5;
-                prevConfig[2] = s6;
-            }
-            currentDirection = (currentDirection + (directionXClock ? 5 : 3)) % 4;
-            subtiles[currentDirection] = prevConfig;
-        }
-        Debug.LogFormat("[Tasque Managing #{0}] Subtile configurations (clockwise order):", moduleId);
-        for (int i = 0; i < 4; i++)
-            Debug.LogFormat("[Tasque Managing #{0}] {1}", moduleId, subtiles[i].Select(x => "ABCD"[x]).Join(", "));
     }
 
     private void PressTile(KMSelectable tile)
@@ -333,7 +209,7 @@ public class tasqueManaging : MonoBehaviour
         for (int i = 0; i < 4; i++)
             if (groupIndices[i].Contains(goalTiles[stage]))
                 group = i;
-        var subtile = subtiles[group][Array.IndexOf(groupIndices[group], goalTiles[stage])];
+        var subtile = Array.IndexOf(groupIndices[group], goalTiles[stage]);
         var groupFirst = bomb.GetSerialNumberNumbers().Last() % 2 == 0;
         audio.PlaySoundAtTransform("ABCD"[groupFirst ? group : subtile].ToString(), transform);
         StartCoroutine(ShowLetter("ABCD"[groupFirst ? group : subtile]));
