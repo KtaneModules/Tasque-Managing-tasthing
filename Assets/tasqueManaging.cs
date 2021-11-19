@@ -70,7 +70,6 @@ public class tasqueManaging : MonoBehaviour
 #pragma warning disable 0649
     private bool TwitchPlaysActive;
 #pragma warning restore 0649
-    private int startingTime;
 
     private static int moduleIdCounter = 1;
     private int moduleId;
@@ -110,9 +109,7 @@ public class tasqueManaging : MonoBehaviour
 
     private void Start()
     {
-        startingTime = (int)bomb.GetTime();
         maze = mazes[bomb.GetSerialNumberNumbers().First() % 4].Split(';').ToArray();
-
         startingPosition = rnd.Range(0, 16);
         currentPosition = startingPosition;
         Debug.LogFormat("[Tasque Managing #{0}] We begin at {1}, {1}!", moduleId, PositionName(startingPosition));
@@ -147,8 +144,8 @@ public class tasqueManaging : MonoBehaviour
                 return;
             if (!maze[currentPosition].Contains(Array.IndexOf(movableTiles, ix).ToString()))
             {
-                module.HandleStrike();
                 Debug.LogFormat("[Tasque Managing #{0}] No, no! You ran into a wall!", moduleId);
+                StartCoroutine(Strike());
             }
             else
             {
