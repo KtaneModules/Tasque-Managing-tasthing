@@ -288,6 +288,8 @@ public class tasqueManaging : MonoBehaviour
 
     private IEnumerator ProcessTwitchCommand(string input)
     {
+        yield return "strike";
+        yield return "solve";
         var directions = new string[] { "TL", "TR", "BL", "BR" };
         input = input.Trim().ToUpperInvariant();
         if (input == "ACTIVATE" || input == "START" || input == "BEGIN" || input == "GO")
