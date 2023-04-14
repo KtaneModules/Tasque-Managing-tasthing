@@ -213,6 +213,7 @@ public class tasqueManaging : MonoBehaviour
         yield return new WaitForSeconds(.5f);
         audio.PlaySoundAtTransform("ABCD"[groupFirst ? subtile : group].ToString(), transform);
         StartCoroutine(ShowLetter("ABCD"[groupFirst ? subtile : group]));
+        Debug.LogFormat("[Tasque Managing #{0}] I have said {1}{2}, I have I have!", moduleId, "ABCD"[groupFirst ? group : subtile], "ABCD"[groupFirst ? subtile : group].ToString());
         yield return new WaitForSeconds(.5f);
         animating = false;
         yield return new WaitForSeconds(waitTime);
