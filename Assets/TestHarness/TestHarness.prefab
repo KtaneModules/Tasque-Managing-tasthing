@@ -17766,7 +17766,7 @@ TextMesh:
   m_FontSize: 80
   m_FontStyle: 0
   m_RichText: 1
-  m_Font: {fileID: 12800000, guid: 451d40bceebd28f4d8d52ce2127536e7, type: 3}
+  m_Font: {fileID: 12800000, guid: 1ebe1d96973a920409b439b3a0e2bb63, type: 3}
   m_Color:
     serializedVersion: 2
     rgba: 4294967295
@@ -17892,7 +17892,7 @@ TextMesh:
   m_FontSize: 100
   m_FontStyle: 0
   m_RichText: 1
-  m_Font: {fileID: 12800000, guid: 451d40bceebd28f4d8d52ce2127536e7, type: 3}
+  m_Font: {fileID: 12800000, guid: 1ebe1d96973a920409b439b3a0e2bb63, type: 3}
   m_Color:
     serializedVersion: 2
     rgba: 4294967295
@@ -17955,7 +17955,7 @@ TextMesh:
   m_FontSize: 100
   m_FontStyle: 0
   m_RichText: 1
-  m_Font: {fileID: 12800000, guid: 451d40bceebd28f4d8d52ce2127536e7, type: 3}
+  m_Font: {fileID: 12800000, guid: 1ebe1d96973a920409b439b3a0e2bb63, type: 3}
   m_Color:
     serializedVersion: 2
     rgba: 4294967295
@@ -17997,7 +17997,7 @@ TextMesh:
   m_FontSize: 200
   m_FontStyle: 0
   m_RichText: 1
-  m_Font: {fileID: 12800000, guid: 451d40bceebd28f4d8d52ce2127536e7, type: 3}
+  m_Font: {fileID: 12800000, guid: 1ebe1d96973a920409b439b3a0e2bb63, type: 3}
   m_Color:
     serializedVersion: 2
     rgba: 4278190080
@@ -20158,13 +20158,7 @@ MonoBehaviour:
   CustomWidget: {fileID: 114213089377510072}
   HighlightPrefab: {fileID: 100000, guid: d78a484c6e87f1b47b6596ac080fe942, type: 2}
   AudioVolume: 0.25
-  AudioClips:
-  - {fileID: 8300000, guid: 0d0a1a4ea23659a46ad7ac68fd826368, type: 3}
-  - {fileID: 8300000, guid: f6e6b8c437a0f114fb2c5774a8cd8be9, type: 3}
-  - {fileID: 8300000, guid: e5444f901abec404e96cf3e2eef3b507, type: 3}
-  - {fileID: 8300000, guid: c93828e5ad7ffa44abfaad7249553835, type: 3}
-  - {fileID: 8300000, guid: 3d84a4aee36c293439fba49f6dbc9488, type: 3}
-  - {fileID: 8300000, guid: 88212e7f18e7a4040ae15341313560f8, type: 3}
+  AudioClips: []
   StrikeCount: 3
   TimeLimit: 600
   BombSize: 1
